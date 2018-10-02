@@ -3,6 +3,7 @@ import socket
 import sys
 import os
 import threading
+import json
 
 # Lock utilizado para sincronizar escritura
 print_lock = threading.Lock()
@@ -44,7 +45,31 @@ class socket_listener(threading.Thread):
 servers = dict()
 
 if os.path.isfile(sys.argv[1]):
-    print('lleizon')
+
+	# se cargan los datos
+    with open(sys.argv[1]) as archivo:
+    	data = json.load(archivo)
+
+    for i in range(len(data)):
+
+    	# nombre del server
+        nombre = data[i]["nombre"]
+
+        # direccion del server
+        direccion = data[i]["direccion"]
+
+        # puerto (23 por defecto)
+        puerto = 23
+
+        # si se indica el puerto se modifica
+        try:
+        	puerto = data[i]["puerto"]
+        except KeyError:
+        	pass
+
+        # cada elemento del diccionario usa el nombre como llave y una tupla con la direccion y el puerto como valor
+        servers[nombre] = direccion, puerto    
+
 else:
     i = 1
     while i < len(sys.argv):
