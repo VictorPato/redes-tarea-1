@@ -17,13 +17,16 @@ class socket_listener(threading.Thread):
         self.port = port
         self.address = address
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # se pone el socket en modo timeout para que no se bloquee, permitiendo que itere al correr
+        self.clientsocket.settimeout(0.1)
+        self.should_run = True
 
     def run(self):
         self.clientsocket.connect((self.address, self.port))
         # recibe la primera respuesta
         # TODO: No se si imprimir la primera respuesta
         self.clientsocket.recv(4096)
-        while True:
+        while self.should_run:
             answer = self.clientsocket.recv(4096)
             print_lock.acquire()
             # TODO: Considerando que es multiservidor, quizas queramos quitar el "user@CC4303 ~ $ " al final de la respuesta
@@ -31,6 +34,8 @@ class socket_listener(threading.Thread):
             print(answer.decode())
             print_lock.release()
 
+    def stop(self):
+        self.should_run = False
 
 # diccionario de servers
 servers = dict()
@@ -74,6 +79,18 @@ for nombre, datos in servers.items():
     socket_threads.append(new_thread)
     # TODO: falta hacerles thread.start()
 
+# comenzar los threads
+for thread in socket_threads:
+    print("Comenzando el thread "+ thread.name)
+    thread.start()
+
+# matar los threads
+for thread in socket_threads:
+    print("Matando el thread "+ thread.name)
+    thread.stop()
+    thread.join()
+    print("El thread "+ thread.name + " murio")
+    
 """
 # nombre del server
 nombre = sys.argv[1]
