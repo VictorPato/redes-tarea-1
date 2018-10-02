@@ -17,25 +17,28 @@ class socket_listener(threading.Thread):
         self.port = port
         self.address = address
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # se pone el socket en modo timeout para que no se bloquee, permitiendo que itere al correr
-        self.clientsocket.settimeout(0.1)
         self.should_run = True
+
+    def print_to_console(self, to_print):
+        print_lock.acquire()
+        print("-------" + self.name + " en el puerto " + str(self.port) + " dice:")
+        print(to_print.decode())
+        print("--------- Fin mensaje de " + self.name)
+        print_lock.release()
 
     def run(self):
         self.clientsocket.connect((self.address, self.port))
         # recibe la primera respuesta
-        # TODO: No se si imprimir la primera respuesta
-        self.clientsocket.recv(4096)
+        self.print_to_console(self.clientsocket.recv(4096))
         while self.should_run:
             answer = self.clientsocket.recv(4096)
-            print_lock.acquire()
-            # TODO: Considerando que es multiservidor, quizas queramos quitar el "user@CC4303 ~ $ " al final de la respuesta
-            print(self.name + " en el puerto " + str(self.port) + " dice:")
-            print(answer.decode())
-            print_lock.release()
+            if len(answer) == 0:
+                break
+            self.print_to_console(self.clientsocket.recv(4096))
 
     def stop(self):
         self.should_run = False
+
 
 # diccionario de servers
 servers = dict()
@@ -56,7 +59,7 @@ else:
         puerto = 23
 
         # si se indica el puerto se modifica, ademas hay que avanzar un espacio extra
-        if (i + 2 < len(sys.argv)):
+        if i + 2 < len(sys.argv):
             try:
                 puerto = int(sys.argv[i + 2])
                 i += 1
@@ -68,7 +71,7 @@ else:
         # cada elemento del diccionario usa el nombre como llave y una tupla con la direccion y el puerto como valor
         servers[nombre] = direccion, puerto
 
-# lista de los threads por si fuera necesario usarlos
+# lista de los threads
 socket_threads = []
 
 # se conecta a los servidores
@@ -77,20 +80,29 @@ for nombre, datos in servers.items():
     print("Conectando a " + nombre + " en el puerto " + str(puerto))
     new_thread = socket_listener(nombre, puerto, direccion)
     socket_threads.append(new_thread)
-    # TODO: falta hacerles thread.start()
 
 # comenzar los threads
 for thread in socket_threads:
-    print("Comenzando el thread "+ thread.name)
+    print("Comenzando el thread " + thread.name)
     thread.start()
+
+while True:
+    message = input()
+    message_parts = message.split()
+    comando = message_parts[0]
+    if message_parts[1] == 'all':
+        for nombre, datos in servers.items():
+            pass
+
+
 
 # matar los threads
 for thread in socket_threads:
-    print("Matando el thread "+ thread.name)
+    print("Matando el thread " + thread.name)
     thread.stop()
     thread.join()
-    print("El thread "+ thread.name + " murio")
-    
+    print("El thread " + thread.name + " murio")
+
 """
 # nombre del server
 nombre = sys.argv[1]
