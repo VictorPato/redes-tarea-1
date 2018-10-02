@@ -1,0 +1,16 @@
+[
+	{
+		"nombre": "server1",
+		"direccion": "127.0.0.1",
+		"puerto": "8000"
+	},
+	{
+		"nombre": "server2",
+		"direccion": "127.0.0.1"
+	},
+	{
+		"nombre": "server3",
+		"direccion": "127.0.0.1",
+		"puerto": "8001"
+	}
+]
