@@ -33,9 +33,11 @@ class socket_listener(threading.Thread):
         self.print_to_console(self.clientsocket.recv(4096))
         while self.should_run:
             answer = self.clientsocket.recv(4096)
+            print("Se recibio mensaje de " + self.name)
             if len(answer) == 0:
                 break
-            self.print_to_console(self.clientsocket.recv(4096))
+            self.print_to_console(answer)
+        print("Se esta muriendo el thread de " + self.name)
 
     def stop(self):
         self.should_run = False
@@ -43,6 +45,8 @@ class socket_listener(threading.Thread):
 
 # diccionario de servers
 servers = dict()
+# lista de threads
+socket_threads = []
 
 if os.path.isfile(sys.argv[1]):
 
@@ -72,6 +76,7 @@ if os.path.isfile(sys.argv[1]):
 
         # se agrega el server al diccionario, usando el nombre como llave y el thread como valor
         servers[nombre] = new_thread
+        socket_threads.append(new_thread)
 
 else:
     i = 1
@@ -107,13 +112,39 @@ for server, thread in servers.items():
     print("Comenzando el thread " + thread.name)
     thread.start()
 
-while True:
+# ciclo para enviar comandos
+while len(servers) > 0:
+    # se separa la parte del input que es comando y cual son los servers
     message = input()
     message_parts = message.split()
-    comando = message_parts[0]
-    if message_parts[1] == 'all':
-        for server, thread in servers.items():
-            thread.clientsocket.send(comando.encode())
+    i = 0
+    target_is_all = False
+    for part in message_parts:
+        if part == 'all':
+            target_is_all = True
+            break
+        if part in servers:
+            break
+        i += 1
+    command = ' '.join(message_parts[:i])
+    if target_is_all:
+        servers_to_send = servers.keys()
+    else:
+        servers_to_send = message_parts[i:]
+
+    print("Command: " + command)
+    print("Servers: " + str(servers_to_send))
+    for srv in servers_to_send:
+        servers[srv].clientsocket.send(command.encode())
+        print("Se envio mensaje a server " + srv)
+
+    if command == 'exit':
+        for srv in servers_to_send:
+            del servers[srv]
+            print("Los servers que quedan son " + str(servers))
+
+
+
 
 # matar los threads
 for thread in socket_threads:
