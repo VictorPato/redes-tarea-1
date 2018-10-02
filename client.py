@@ -46,13 +46,13 @@ servers = dict()
 
 if os.path.isfile(sys.argv[1]):
 
-	# se cargan los datos
+    # se cargan los datos
     with open(sys.argv[1]) as archivo:
-    	data = json.load(archivo)
+        data = json.load(archivo)
 
     for i in range(len(data)):
 
-    	# nombre del server
+        # nombre del server
         nombre = data[i]["nombre"]
 
         # direccion del server
@@ -63,15 +63,15 @@ if os.path.isfile(sys.argv[1]):
 
         # si se indica el puerto se modifica
         try:
-        	puerto = int(data[i]["puerto"])
+            puerto = int(data[i]["puerto"])
         except KeyError:
-        	pass
+            pass
 
         # se crea el thread
         new_thread = socket_listener(nombre, puerto, direccion)
 
         # se agrega el server al diccionario, usando el nombre como llave y el thread como valor
-        servers[nombre] = new_thread   
+        servers[nombre] = new_thread
 
 else:
     i = 1
@@ -112,10 +112,8 @@ while True:
     message_parts = message.split()
     comando = message_parts[0]
     if message_parts[1] == 'all':
-        for nombre, datos in servers.items():
-            pass
-
-
+        for server, thread in servers.items():
+            thread.clientsocket.send(comando.encode())
 
 # matar los threads
 for thread in socket_threads:
