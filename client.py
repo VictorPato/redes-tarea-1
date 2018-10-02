@@ -63,12 +63,15 @@ if os.path.isfile(sys.argv[1]):
 
         # si se indica el puerto se modifica
         try:
-        	puerto = data[i]["puerto"]
+        	puerto = int(data[i]["puerto"])
         except KeyError:
         	pass
 
-        # cada elemento del diccionario usa el nombre como llave y una tupla con la direccion y el puerto como valor
-        servers[nombre] = direccion, puerto    
+        # se crea el thread
+        new_thread = socket_listener(nombre, puerto, direccion)
+
+        # se agrega el server al diccionario, usando el nombre como llave y el thread como valor
+        servers[nombre] = new_thread   
 
 else:
     i = 1
@@ -93,21 +96,14 @@ else:
 
         i += 2
 
-        # cada elemento del diccionario usa el nombre como llave y una tupla con la direccion y el puerto como valor
-        servers[nombre] = direccion, puerto
+        # se crea el thread
+        new_thread = socket_listener(nombre, puerto, direccion)
 
-# lista de los threads
-socket_threads = []
-
-# se conecta a los servidores
-for nombre, datos in servers.items():
-    direccion, puerto = datos
-    print("Conectando a " + nombre + " en el puerto " + str(puerto))
-    new_thread = socket_listener(nombre, puerto, direccion)
-    socket_threads.append(new_thread)
+        # se agrega el server al diccionario, usando el nombre como llave y el thread como valor
+        servers[nombre] = new_thread
 
 # comenzar los threads
-for thread in socket_threads:
+for server, thread in servers.items():
     print("Comenzando el thread " + thread.name)
     thread.start()
 
@@ -127,32 +123,3 @@ for thread in socket_threads:
     thread.stop()
     thread.join()
     print("El thread " + thread.name + " murio")
-
-"""
-# nombre del server
-nombre = sys.argv[1]
-
-puerto = 23
-
-if len(sys.argv) == 3:
-    # elejimos el puerto a conectar
-    puerto = int(sys.argv[2])
-
-print("Conectando a " + nombre + " en el puerto " + str(puerto))
-
-# lo conectamos al puerto acordado
-clientsocket.connect(('localhost', puerto))
-
-first_answer = clientsocket.recv(2048)
-print(first_answer.decode(), end='')
-
-n = 0
-while True:
-    message = input()
-    if message == 'exit':
-        break
-    clientsocket.send(message.encode())
-    answer = clientsocket.recv(2048)
-<<<<<<< HEAD
-print(answer.decode(), end='')
-"""
