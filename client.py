@@ -11,9 +11,8 @@ print_lock = threading.Lock()
 # La clase socket_listener esta pensada para crear un thread por cada socket que le interesa escuchar al programa
 # Hace uso de print_lock para sincronizar la escritura al output
 class socket_listener(threading.Thread):
-    def __init__(self, threadID, name, port=23, address='localhost'):
+    def __init__(self, name, port=23, address='localhost'):
         threading.Thread.__init__(self)
-        self.threadID = threadID
         self.name = name
         self.port = port
         self.address = address
@@ -32,9 +31,6 @@ class socket_listener(threading.Thread):
             print(answer.decode())
             print_lock.release()
 
-
-# armamos el socket
-clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # diccionario de servers
 servers = dict()
@@ -67,18 +63,16 @@ else:
         # cada elemento del diccionario usa el nombre como llave y una tupla con la direccion y el puerto como valor
         servers[nombre] = direccion, puerto
 
+# lista de los threads por si fuera necesario usarlos
+socket_threads = []
 
-# esto esta mal, no se como conectar varios, pero asi se itera sobre los servers
+# se conecta a los servidores
 for nombre, datos in servers.items():
     direccion, puerto = datos
     print("Conectando a " + nombre + " en el puerto " + str(puerto))
-
-    # se conecta
-    clientsocket.connect((direccion, puerto))
-
-    first_answer = clientsocket.recv(2048)
-    print(first_answer.decode(), end='')
-
+    new_thread = socket_listener(nombre, puerto, direccion)
+    socket_threads.append(new_thread)
+    # TODO: falta hacerles thread.start()
 
 """
 # nombre del server
