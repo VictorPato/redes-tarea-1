@@ -105,32 +105,42 @@ else:
 for thrd in socket_threads:
     thrd.start()
 
-# ciclo para enviar comandos
-while len(servers) > 0:
-    # se separa la parte del input que es comando y cual son los servers
-    message = input("")
-    message_parts = message.split()
-    i = 0
-    target_is_all = False
-    for part in message_parts:
-        if part == 'all':
-            target_is_all = True
-            break
-        if part in servers:
-            break
-        i += 1
-    command = ' '.join(message_parts[:i])
-    if target_is_all:
-        servers_to_send = list(servers.keys())
-    else:
-        servers_to_send = message_parts[i:]
-
-    for srv in servers_to_send:
-        servers[srv].clientsocket.send(command.encode())
-
-    if command == 'exit':
+try:
+    # ciclo para enviar comandos
+    while len(servers) > 0:
+        # se separa la parte del input que es comando y cual son los servers
+        message = input("")
+        message_parts = message.split()
+        i = 0
+        target_is_all = False
+        for part in message_parts:
+            if part == 'all':
+                target_is_all = True
+                break
+            if part in servers:
+                break
+            i += 1
+        if i == len(message_parts):
+            print("No se ingreso  ningun servidor de destino")
+            continue
+        command = ' '.join(message_parts[:i])
+        if target_is_all:
+            servers_to_send = list(servers.keys())
+        else:
+            servers_to_send = message_parts[i:]
+        # se envia el comando a todos los servers destino
         for srv in servers_to_send:
-            servers.pop(srv)
+            servers[srv].clientsocket.send(command.encode())
+        # si se hizo exit, se quitan servidores del diccionario
+        if command == 'exit':
+            for srv in servers_to_send:
+                servers.pop(srv)
+    print("Se cerraron todos los servidores")
+except KeyboardInterrupt:
+    print("\nCerrando conexiones")
+    servers_to_send = list(servers.keys())
+    for srv in servers_to_send:
+        servers[srv].clientsocket.send("exit".encode())
 
 # matar los threads
 for thread in socket_threads:
