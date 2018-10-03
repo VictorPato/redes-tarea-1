@@ -9,7 +9,7 @@ Tarea 1 del curso de Redes.
 
 ## Cómo correr la tarea
 
-La tarea fue resuelta en Python 3. A continuación se indica cómo correrla.
+La tarea fue resuelta en Python 3, para Ubuntu x64. A continuación se indica cómo correrla.
 
 ### Prerequisitos
 
