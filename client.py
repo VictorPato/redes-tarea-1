@@ -39,6 +39,8 @@ class socket_listener(threading.Thread):
 
 # diccionario de servers
 servers = dict()
+# diccionario de servers con direccion y puerto
+servers_dp = dict()
 # lista de threads
 socket_threads = []
 
@@ -46,13 +48,18 @@ socket_threads = []
 # trata de crear un thread. si lo logra, lo agrega al diccionario de servers y lista de threads
 def try_create_thread(nombre, puerto, direccion):
     if nombre in servers:
-        print("Se trata de conectar a "+nombre+", que ya estaba conectado. Se mantiene primera conexion.")
+        print("Se trata de conectar a " + nombre + ", que ya estaba conectado. Se mantiene primera conexion.")
+        return
+    if (direccion, puerto) in servers_dp.values():
+        print("Se trata de conectar a " + direccion + " en el puerto " + str(puerto) +
+              ", que ya estaba conectado. Se mantiene primera conexion.")
         return
     new_thread = socket_listener(nombre, puerto, direccion)
     try:
         new_thread.clientsocket.connect((direccion, puerto))
         servers[nombre] = new_thread
         socket_threads.append(new_thread)
+        servers_dp[nombre] = direccion, puerto
         print("Conectado a " + nombre)
     except ConnectionRefusedError:
         print("Error en conexion a " + nombre)
