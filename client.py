@@ -45,6 +45,9 @@ socket_threads = []
 
 # trata de crear un thread. si lo logra, lo agrega al diccionario de servers y lista de threads
 def try_create_thread(nombre, puerto, direccion):
+    if nombre in servers:
+        print("Se trata de conectar a "+nombre+", que ya estaba conectado. Se mantiene primera conexion.")
+        return
     new_thread = socket_listener(nombre, puerto, direccion)
     try:
         new_thread.clientsocket.connect((direccion, puerto))
