@@ -18,29 +18,23 @@ class socket_listener(threading.Thread):
         self.port = port
         self.address = address
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.should_run = True
 
     def print_to_console(self, to_print):
         print_lock.acquire()
-        print("-------" + self.name + " en el puerto " + str(self.port) + " dice:")
+        print("<<<<< " + self.name + " en el puerto " + str(self.port) + " dice:")
         print(to_print.decode())
-        print("--------- Fin mensaje de " + self.name)
+        print("Fin mensaje de " + self.name + " >>>>>\n")
         print_lock.release()
 
     def run(self):
-        self.clientsocket.connect((self.address, self.port))
         # recibe la primera respuesta
         self.print_to_console(self.clientsocket.recv(4096))
-        while self.should_run:
+        # recibe el resto de las respuestas hasta que muera la conexion
+        while True:
             answer = self.clientsocket.recv(4096)
-            print("Se recibio mensaje de " + self.name)
             if len(answer) == 0:
                 break
             self.print_to_console(answer)
-        print("Se esta muriendo el thread de " + self.name)
-
-    def stop(self):
-        self.should_run = False
 
 
 # diccionario de servers
@@ -48,8 +42,20 @@ servers = dict()
 # lista de threads
 socket_threads = []
 
-if os.path.isfile(sys.argv[1]):
 
+# trata de crear un thread. si lo logra, lo agrega al diccionario de servers y lista de threads
+def try_create_thread(nombre, puerto, direccion):
+    new_thread = socket_listener(nombre, puerto, direccion)
+    try:
+        new_thread.clientsocket.connect((direccion, puerto))
+        servers[nombre] = new_thread
+        socket_threads.append(new_thread)
+        print("Conectado a " + nombre)
+    except ConnectionRefusedError:
+        print("Error en conexion a " + nombre)
+
+
+if os.path.isfile(sys.argv[1]):
     # se cargan los datos
     with open(sys.argv[1]) as archivo:
         data = json.load(archivo)
@@ -70,13 +76,7 @@ if os.path.isfile(sys.argv[1]):
             puerto = int(data[i]["puerto"])
         except KeyError:
             pass
-
-        # se crea el thread
-        new_thread = socket_listener(nombre, puerto, direccion)
-
-        # se agrega el server al diccionario, usando el nombre como llave y el thread como valor
-        servers[nombre] = new_thread
-        socket_threads.append(new_thread)
+        try_create_thread(nombre, puerto, direccion)
 
 else:
     i = 1
@@ -100,22 +100,15 @@ else:
                 pass
 
         i += 2
+        try_create_thread(nombre, puerto, direccion)
 
-        # se crea el thread
-        new_thread = socket_listener(nombre, puerto, direccion)
-
-        # se agrega el server al diccionario, usando el nombre como llave y el thread como valor
-        servers[nombre] = new_thread
-
-# comenzar los threads
-for server, thread in servers.items():
-    print("Comenzando el thread " + thread.name)
-    thread.start()
+for thrd in socket_threads:
+    thrd.start()
 
 # ciclo para enviar comandos
 while len(servers) > 0:
     # se separa la parte del input que es comando y cual son los servers
-    message = input()
+    message = input("")
     message_parts = message.split()
     i = 0
     target_is_all = False
@@ -128,27 +121,17 @@ while len(servers) > 0:
         i += 1
     command = ' '.join(message_parts[:i])
     if target_is_all:
-        servers_to_send = servers.keys()
+        servers_to_send = list(servers.keys())
     else:
         servers_to_send = message_parts[i:]
 
-    print("Command: " + command)
-    print("Servers: " + str(servers_to_send))
     for srv in servers_to_send:
         servers[srv].clientsocket.send(command.encode())
-        print("Se envio mensaje a server " + srv)
 
     if command == 'exit':
         for srv in servers_to_send:
-            del servers[srv]
-            print("Los servers que quedan son " + str(servers))
-
-
-
+            servers.pop(srv)
 
 # matar los threads
 for thread in socket_threads:
-    print("Matando el thread " + thread.name)
-    thread.stop()
     thread.join()
-    print("El thread " + thread.name + " murio")
