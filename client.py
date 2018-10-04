@@ -150,7 +150,7 @@ except KeyboardInterrupt:
     print("\nCerrando conexiones")
     servers_to_send = list(servers.keys())
     for srv in servers_to_send:
-        servers[srv].clientsocket.send("exit".encode())
+        servers[srv].clientsocket.shutdown(socket.SHUT_RDWR)
 
 # matar los threads
 for thread in socket_threads:
